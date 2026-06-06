@@ -4,9 +4,9 @@
 
 // Global Application State
 const state = {
-    apiKey: localStorage.getItem('gemini_api_key') || '',
-    geminiModel: localStorage.getItem('gemini_model') || 'gemini-2.5-flash',
-    customModel: localStorage.getItem('custom_gemini_model') || '',
+    apiKey: '',
+    geminiModel: 'gemini-2.5-flash',
+    customModel: '',
     theme: localStorage.getItem('app_theme') || 'dark',
     currentPlan: null,
     activeTimer: {
@@ -74,7 +74,6 @@ function escapeHTML(str) {
 // ==========================================================================
 document.addEventListener('DOMContentLoaded', () => {
     initTheme();
-    initAPIKeyStatus();
     setupEventListeners();
     runDiagnosticTests(); // Run automated positive/negative validation checks (Testing Criteria)
 });
@@ -92,67 +91,14 @@ function toggleTheme() {
     initTheme();
 }
 
-// API status setup
-function initAPIKeyStatus() {
-    const badge = document.getElementById('api-status-badge');
-    const inputKey = document.getElementById('input-api-key');
-    const modelSelect = document.getElementById('select-model');
-    const customInput = document.getElementById('input-custom-model');
-    const customContainer = document.getElementById('custom-model-container');
-    
-    if (state.apiKey) {
-        badge.textContent = "API ACTIVE";
-        badge.className = "status-badge status-active";
-        inputKey.value = state.apiKey;
-    } else {
-        badge.textContent = "DEMO MODE";
-        badge.className = "status-badge status-demo";
-        inputKey.value = '';
-    }
 
-    if (modelSelect) {
-        modelSelect.value = state.geminiModel || 'gemini-1.5-flash';
-    }
-    if (customInput) {
-        customInput.value = state.customModel || '';
-    }
-    if (customContainer) {
-        if (state.geminiModel === 'custom') {
-            customContainer.classList.remove('hidden');
-        } else {
-            customContainer.classList.add('hidden');
-        }
-    }
-}
 
 // Event Bindings
 function setupEventListeners() {
     // Theme Button
     document.getElementById('btn-toggle-theme').addEventListener('click', toggleTheme);
 
-    // Modal Actions
-    document.getElementById('btn-open-settings').addEventListener('click', openSettingsModal);
-    document.getElementById('btn-close-modal').addEventListener('click', closeSettingsModal);
-    document.getElementById('btn-save-key').addEventListener('click', saveAPIKey);
-    document.getElementById('btn-clear-key').addEventListener('click', clearAPIKey);
-    document.getElementById('btn-use-demo').addEventListener('click', () => {
-        closeSettingsModal();
-    });
 
-    // Model Select change handler
-    const modelSelect = document.getElementById('select-model');
-    if (modelSelect) {
-        modelSelect.addEventListener('change', (e) => {
-            const customContainer = document.getElementById('custom-model-container');
-            if (customContainer) {
-                if (e.target.value === 'custom') {
-                    customContainer.classList.remove('hidden');
-                } else {
-                    customContainer.classList.add('hidden');
-                }
-            }
-        });
-    }
 
     // Form Submission
     document.getElementById('cooking-planner-form').addEventListener('submit', handleFormSubmit);
@@ -203,45 +149,7 @@ function setupEventListeners() {
     document.getElementById('btn-export-groceries').addEventListener('click', exportGroceries);
 }
 
-// Modal functions
-function openSettingsModal() {
-    document.getElementById('modal-settings').classList.remove('hidden');
-}
 
-function closeSettingsModal() {
-    document.getElementById('modal-settings').classList.add('hidden');
-}
-
-function saveAPIKey() {
-    const key = document.getElementById('input-api-key').value.trim();
-    const model = document.getElementById('select-model').value;
-    const customModel = document.getElementById('input-custom-model').value.trim();
-
-    state.apiKey = key;
-    localStorage.setItem('gemini_api_key', key);
-
-    state.geminiModel = model;
-    localStorage.setItem('gemini_model', model);
-
-    state.customModel = customModel;
-    localStorage.setItem('custom_gemini_model', customModel);
-
-    initAPIKeyStatus();
-    closeSettingsModal();
-}
-
-function clearAPIKey() {
-    state.apiKey = '';
-    state.geminiModel = 'gemini-1.5-flash';
-    state.customModel = '';
-    
-    localStorage.removeItem('gemini_api_key');
-    localStorage.removeItem('gemini_model');
-    localStorage.removeItem('custom_gemini_model');
-    
-    initAPIKeyStatus();
-    closeSettingsModal();
-}
 
 // Switch Result Tabs
 function switchTab(tabId) {

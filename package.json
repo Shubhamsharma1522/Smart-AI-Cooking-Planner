@@ -3,7 +3,8 @@
   "version": "1.0.0",
   "description": "CulinarySync AI Cooking To-Do list micro-app for Google Prompt Wars",
   "scripts": {
-    "dev": "npx -y http-server -p 8080"
+    "dev": "npx -y http-server -p 8080",
+    "build": "echo 'Static build complete'"
   },
   "dependencies": {}
 }

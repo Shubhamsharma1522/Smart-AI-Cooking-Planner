@@ -285,10 +285,11 @@ async function handleFormSubmit(e) {
 
     try {
         let planData;
-        if (state.apiKey) {
+        try {
             planData = await generateAICookingPlan(dayDesc, diet, budget, servings, prepTime, equipment);
-        } else {
-            // Simulate AI generating plan (looks very realistic, tailored to input)
+        } catch (apiError) {
+            console.warn("Live API call failed, falling back to Interactive Demo Mode:", apiError);
+            // Fall back to interactive mock plan if API or serverless is not configured
             planData = await generateMockPlan(dayDesc, diet, budget, servings, prepTime, equipment);
         }
 
@@ -416,30 +417,38 @@ You MUST respond with a single, highly structured JSON object following this EXA
 Ensure all steps in the timeline are logical, realistic, and tailored to the schedule in "Day Context". Adjust estimatedCost reasonably to represent the servings and meal styles.
 `;
 
-    let modelId = state.geminiModel || 'gemini-1.5-flash';
-    if (modelId === 'custom') {
-        modelId = state.customModel.trim() || 'gemini-1.5-flash';
-    }
-    if (modelId.startsWith('models/')) {
-        modelId = modelId.substring(7);
-    }
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelId}:generateContent?key=${state.apiKey}`;
-    const payload = {
-        contents: [{ parts: [{ text: prompt }] }],
-        generationConfig: {
-            responseMimeType: "application/json"
+    let response;
+    if (state.apiKey) {
+        let modelId = state.geminiModel || 'gemini-2.5-flash';
+        if (modelId === 'custom') {
+            modelId = state.customModel.trim() || 'gemini-2.5-flash';
         }
-    };
-
-    const response = await fetch(url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-    });
+        if (modelId.startsWith('models/')) {
+            modelId = modelId.substring(7);
+        }
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelId}:generateContent?key=${state.apiKey}`;
+        response = await fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                contents: [{ parts: [{ text: prompt }] }],
+                generationConfig: {
+                    responseMimeType: "application/json"
+                }
+            })
+        });
+    } else {
+        // Route through serverless function on Vercel (protects secret API keys)
+        response = await fetch('/api/generate', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ prompt })
+        });
+    }
 
     if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.error?.message || "HTTP API error");
+        throw new Error(errorData.error?.message || errorData.error || "HTTP API error");
     }
 
     const jsonRes = await response.json();

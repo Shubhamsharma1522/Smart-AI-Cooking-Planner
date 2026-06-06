@@ -5,7 +5,7 @@
 // Global Application State
 const state = {
     apiKey: localStorage.getItem('gemini_api_key') || '',
-    geminiModel: localStorage.getItem('gemini_model') || 'gemini-1.5-flash',
+    geminiModel: localStorage.getItem('gemini_model') || 'gemini-2.5-flash',
     customModel: localStorage.getItem('custom_gemini_model') || '',
     theme: localStorage.getItem('app_theme') || 'dark',
     currentPlan: null,

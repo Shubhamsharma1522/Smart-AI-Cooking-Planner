@@ -5,6 +5,8 @@
 // Global Application State
 const state = {
     apiKey: localStorage.getItem('gemini_api_key') || '',
+    geminiModel: localStorage.getItem('gemini_model') || 'gemini-1.5-flash',
+    customModel: localStorage.getItem('custom_gemini_model') || '',
     theme: localStorage.getItem('app_theme') || 'dark',
     currentPlan: null,
     activeTimer: {
@@ -82,6 +84,9 @@ function toggleTheme() {
 function initAPIKeyStatus() {
     const badge = document.getElementById('api-status-badge');
     const inputKey = document.getElementById('input-api-key');
+    const modelSelect = document.getElementById('select-model');
+    const customInput = document.getElementById('input-custom-model');
+    const customContainer = document.getElementById('custom-model-container');
     
     if (state.apiKey) {
         badge.textContent = "API ACTIVE";
@@ -91,6 +96,20 @@ function initAPIKeyStatus() {
         badge.textContent = "DEMO MODE";
         badge.className = "status-badge status-demo";
         inputKey.value = '';
+    }
+
+    if (modelSelect) {
+        modelSelect.value = state.geminiModel || 'gemini-1.5-flash';
+    }
+    if (customInput) {
+        customInput.value = state.customModel || '';
+    }
+    if (customContainer) {
+        if (state.geminiModel === 'custom') {
+            customContainer.classList.remove('hidden');
+        } else {
+            customContainer.classList.add('hidden');
+        }
     }
 }
 
@@ -107,6 +126,21 @@ function setupEventListeners() {
     document.getElementById('btn-use-demo').addEventListener('click', () => {
         closeSettingsModal();
     });
+
+    // Model Select change handler
+    const modelSelect = document.getElementById('select-model');
+    if (modelSelect) {
+        modelSelect.addEventListener('change', (e) => {
+            const customContainer = document.getElementById('custom-model-container');
+            if (customContainer) {
+                if (e.target.value === 'custom') {
+                    customContainer.classList.remove('hidden');
+                } else {
+                    customContainer.classList.add('hidden');
+                }
+            }
+        });
+    }
 
     // Form Submission
     document.getElementById('cooking-planner-form').addEventListener('submit', handleFormSubmit);
@@ -168,17 +202,31 @@ function closeSettingsModal() {
 
 function saveAPIKey() {
     const key = document.getElementById('input-api-key').value.trim();
-    if (key) {
-        state.apiKey = key;
-        localStorage.setItem('gemini_api_key', key);
-        initAPIKeyStatus();
-        closeSettingsModal();
-    }
+    const model = document.getElementById('select-model').value;
+    const customModel = document.getElementById('input-custom-model').value.trim();
+
+    state.apiKey = key;
+    localStorage.setItem('gemini_api_key', key);
+
+    state.geminiModel = model;
+    localStorage.setItem('gemini_model', model);
+
+    state.customModel = customModel;
+    localStorage.setItem('custom_gemini_model', customModel);
+
+    initAPIKeyStatus();
+    closeSettingsModal();
 }
 
 function clearAPIKey() {
     state.apiKey = '';
+    state.geminiModel = 'gemini-1.5-flash';
+    state.customModel = '';
+    
     localStorage.removeItem('gemini_api_key');
+    localStorage.removeItem('gemini_model');
+    localStorage.removeItem('custom_gemini_model');
+    
     initAPIKeyStatus();
     closeSettingsModal();
 }
@@ -356,7 +404,14 @@ You MUST respond with a single, highly structured JSON object following this EXA
 Ensure all steps in the timeline are logical, realistic, and tailored to the schedule in "Day Context". Adjust estimatedCost reasonably to represent the servings and meal styles.
 `;
 
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${state.apiKey}`;
+    let modelId = state.geminiModel || 'gemini-1.5-flash';
+    if (modelId === 'custom') {
+        modelId = state.customModel.trim() || 'gemini-1.5-flash';
+    }
+    if (modelId.startsWith('models/')) {
+        modelId = modelId.substring(7);
+    }
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelId}:generateContent?key=${state.apiKey}`;
     const payload = {
         contents: [{ parts: [{ text: prompt }] }],
         generationConfig: {
@@ -970,7 +1025,14 @@ Return a JSON array of objects representing these alternatives. Each object must
 JSON response format only, no wrappers.
 [{"alternative":"...","ratio":"...","notes":"..."}]`;
             
-            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${state.apiKey}`;
+            let modelId = state.geminiModel || 'gemini-1.5-flash';
+            if (modelId === 'custom') {
+                modelId = state.customModel.trim() || 'gemini-1.5-flash';
+            }
+            if (modelId.startsWith('models/')) {
+                modelId = modelId.substring(7);
+            }
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelId}:generateContent?key=${state.apiKey}`;
             const response = await fetch(url, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
